@@ -1,0 +1,99 @@
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Arial', sans-serif;
+  background-color: #333;
+  color: #fff;
+}
+
+#map {
+  height: 85vh;
+  width: 100vw;
+  cursor: none;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.leaflet-interactive {
+  cursor: none;
+}
+
+#cursor {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-color: #00f;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1001;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 10px rgba(0, 0, 255, 0.5);
+  transition: transform 0.1s ease;
+  animation: cursorPulse 1.2s infinite alternate;
+}
+
+@keyframes cursorPulse {
+  from { transform: translate(-50%, -50%) scale(1); }
+  to { transform: translate(-50%, -50%) scale(1.2); }
+}
+
+/* Message box */
+#messageBox {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  padding: 15px;
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
+  text-align: center;
+  z-index: 1000;
+  border-radius: 8px;
+  margin-top: 5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+#infoBox {
+  position: absolute;
+  bottom: 5vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  background-color: rgba(50, 50, 50, 0.8);
+  color: #fff;
+  padding: 15px;
+  font-size: 16px;
+  font-weight: normal;
+  text-align: center;
+  z-index: 1000;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  line-height: 1.4;
+}
+
+#plotSelection, #dimensionSelection {
+  text-align: center;
+  padding: 20px;
+  background-color: rgba(50, 50, 50, 0.9);
+  color: white;
+  border-radius: 8px;
+  width: 60%;
+  margin: 5% auto;
+}
+
+select, input, button {
+  font-size: 16px;
+  padding: 10px;
+  margin: 10px 0;
+  width: 100%;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}

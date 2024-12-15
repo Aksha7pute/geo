@@ -1,0 +1,285 @@
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Map with Plot Selection</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css">
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: 'Arial', sans-serif;
+      background-color: #333;
+      color: #fff;
+    }
+
+    #map {
+      height: 85vh;
+      width: 100vw;
+      cursor: none;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+    }
+
+    .leaflet-interactive {
+      cursor: none;
+    }
+
+    #cursor {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background-color: #00f;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1001;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 10px rgba(0, 0, 255, 0.5);
+      transition: transform 0.1s ease;
+      animation: cursorPulse 1.2s infinite alternate;
+    }
+
+    @keyframes cursorPulse {
+      from { transform: translate(-50%, -50%) scale(1); }
+      to { transform: translate(-50%, -50%) scale(1.2); }
+    }
+
+    /* Message box */
+    #messageBox {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      padding: 15px;
+      background-color: rgba(255, 255, 255, 0.9);
+      color: #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+      z-index: 1000;
+      border-radius: 8px;
+      margin-top: 5px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    #infoBox {
+      position: absolute;
+      bottom: 5vh;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      background-color: rgba(50, 50, 50, 0.8);
+      color: #fff;
+      padding: 15px;
+      font-size: 16px;
+      font-weight: normal;
+      text-align: center;
+      z-index: 1000;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      line-height: 1.4;
+    }
+
+    #plotSelection, #dimensionSelection {
+      text-align: center;
+      padding: 20px;
+      background-color: rgba(50, 50, 50, 0.9);
+      color: white;
+      border-radius: 8px;
+      width: 60%;
+      margin: 5% auto;
+    }
+
+    select, input, button {
+      font-size: 16px;
+      padding: 10px;
+      margin: 10px 0;
+      width: 100%;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <div id="plotSelection">
+    <h2>Select Plot</h2>
+    <select id="lotSelect">
+      <option value="">Select Lot</option>
+      <option value="56">56</option>
+      <option value="56a">56a</option>
+      <option value="56b">56b</option>
+      <option value="100">100</option>
+      <option value="12">12</option>
+      <option value="16">16</option>
+      <option value="30">30</option>
+    </select>
+    <button id="lotSubmit">Next</button>
+  </div>
+
+  <div id="dimensionSelection" style="display: none;">
+    <h2>Select Dimensions</h2>
+    <label for="length">Length (meters):</label>
+    <select id="length">
+      <option value="6">6</option>
+      <option value="7">7</option>
+      <option value="8">8</option>
+      <option value="9">9</option>
+      <option value="10">10</option>
+      <option value="11">11</option>
+      <option value="15">15</option>
+    </select>
+    
+    <label for="breadth">Breadth (meters):</label>
+    <select id="breadth">
+      <option value="6">6</option>
+      <option value="7">7</option>
+      <option value="8">8</option>
+      <option value="9">9</option>
+      <option value="10">10</option>
+      <option value="11">11</option>
+      <option value="15">15</option>
+    </select>
+
+    <button id="dimensionSubmit">Submit</button>
+  </div>
+
+  <div id="map"></div>
+
+  <div id="messageBox"></div>
+  <div id="infoBox">🌍 Total Red Spots: 0 | ✅ Total Green Spots: 0 | 🔴 Remaining: 0</div>
+  <div id="cursor"></div>
+
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+  <script>
+    let map;
+    const cursorEl = document.getElementById("cursor");
+    const messageBox = document.getElementById("messageBox");
+    const infoBox = document.getElementById("infoBox");
+    const lotSelect = document.getElementById("lotSelect");
+    const lotSubmit = document.getElementById("lotSubmit");
+    const dimensionSelection = document.getElementById("dimensionSelection");
+    const dimensionSubmit = document.getElementById("dimensionSubmit");
+    const lengthInput = document.getElementById("length");
+    const breadthInput = document.getElementById("breadth");
+    let redDots = [];
+    let totalOverlaps = 0;
+
+    function initMap() {
+      map = L.map('map', { zoomControl: false }).setView([28.6139, 77.2090], 13);
+
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: '© Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+      }).addTo(map);
+    }
+
+    function drawPolygon() {
+      const polygonCoordinates = [
+        [18.156294, 75.827700],
+        [18.156204, 75.830797],
+        [18.153727, 75.830794],
+        [18.153755, 75.827717]
+      ];
+
+      const polygon = L.polygon(polygonCoordinates, { color: 'green' }).addTo(map);
+      map.fitBounds(polygon.getBounds());
+      addGridPoints(polygon);
+    }
+
+    function addGridPoints(polygon) {
+      const bounds = polygon.getBounds();
+      const latDiff = (bounds.getNorth() - bounds.getSouth()) / 10;
+      const lngDiff = (bounds.getEast() - bounds.getWest()) / 10;
+
+      for (let i = 0; i < 10; i++) {
+        for (let j = 0; j < 10; j++) {
+          const lat = bounds.getSouth() + latDiff * (i + 0.5);
+          const lng = bounds.getWest() + lngDiff * (j + 0.5);
+
+          const redDot = L.circleMarker([lat, lng], {
+            radius: 5,
+            color: 'yellow',
+            fillColor: 'yellow',
+            fillOpacity: 1
+          }).addTo(map);
+
+          redDot.overlapped = false;
+          redDots.push(redDot);
+        }
+      }
+      updateInfoBox();
+    }
+
+    function updateCursor(event) {
+      cursorEl.style.top = `${event.clientY}px`;
+      cursorEl.style.left = `${event.clientX}px`;
+      const cursorLatLng = map.containerPointToLatLng([event.clientX, event.clientY]);
+      checkOverlap(cursorLatLng);
+    }
+
+    function checkOverlap(cursorLatLng) {
+      let isOverlapping = false;
+      let newOverlapCount = 0;
+
+      redDots.forEach(dot => {
+        const dotLatLng = dot.getLatLng();
+        const distance = cursorLatLng.distanceTo(dotLatLng);
+
+        if (distance <= 1 && !dot.overlapped) {
+          dot.setStyle({ color: "green", fillColor: "green" });
+          dot.overlapped = true;
+          isOverlapping = true;
+          newOverlapCount++;
+        }
+      });
+
+      totalOverlaps += newOverlapCount;
+      const remainingOverlaps = redDots.length - totalOverlaps;
+
+      if (isOverlapping) {
+        messageBox.textContent = "Overlapped: Plant here";
+      } else {
+        messageBox.textContent = "Not in the spot, move towards yellow dot to plant.";
+      }
+      updateInfoBox();
+    }
+
+    function updateInfoBox() {
+      const totalRedSpots = redDots.length;
+      const totalGreenSpots = totalOverlaps;
+      const remainingSpots = totalRedSpots - totalGreenSpots;
+      infoBox.innerHTML = `🌍 Total Red Spots: ${totalRedSpots} | ✅ Total Green Spots: ${totalGreenSpots} | 🔴 Remaining: ${remainingSpots}`;
+    }
+
+    lotSubmit.addEventListener("click", () => {
+      const selectedLot = lotSelect.value;
+
+      if (selectedLot) {
+        document.getElementById("plotSelection").style.display = "none";
+        dimensionSelection.style.display = "block";
+      } else {
+        alert("Please select a valid lot.");
+      }
+    });
+
+    dimensionSubmit.addEventListener("click", () => {
+      const length = parseInt(lengthInput.value, 10);
+      const breadth = parseInt(breadthInput.value, 10);
+
+      if (length > 0 && breadth > 0) {
+        document.getElementById("dimensionSelection").style.display = "none";
+        initMap();
+        drawPolygon();
+      } else {
+        alert("Please enter valid dimensions.");
+      }
+    });
+
+    document.addEventListener("mousemove", updateCursor);
+  </script>
+
+</body></html>
